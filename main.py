@@ -14,12 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import cgi
 import re
-from calendar import weekday
 
 import webapp2
-import cgi
-#import ndb
+import ndb
 
 formLogin = '''
 <html>
@@ -109,7 +108,7 @@ class User(ndb.Model):
     password = ndb.StringProperty(required=True)
     verify = ndb.StringProperty(required=True)
     name = ndb.StringProperty(required=True)
-    lastname = ndb.StringProperty(required=True)
+    lastName = ndb.StringProperty(required=True)
     dni = ndb.StringProperty(required=True)
     question = ndb.StringProperty(required=True)
     answer = ndb.StringProperty(required=True)
@@ -171,32 +170,59 @@ class SignupHandler: #(session_module.BaseSessionHandler):
         question_error = ""
         answer_error = ""
 
-    error = False
+        error = False
 
-    if not valid_email(user_email):
-        username_error = "Email incorrecto!"
-        error = True
-    if not valid_password(user_password):
-        username_error = "Password incorrecto!"
-        error = True
-    if not valid_password(user_verify):
-        username_error = "Verify incorrecto!"
-        error = True
-    if not valid_generic(user_name):
-        username_error = "Name incorrecto!"
-        error = True
-    if not valid_generic(user_lastName):
-        username_error = "lastName incorrecto!"
-        error = True
-    if not valid_generic(user_dni):
-        username_error = "dni incorrecto!"
-        error = True
-    if not valid_generic(user_question):
-        username_error = "question incorrecto!"
-        error = True
-    if not valid_generic(user_answer):
-        username_error = "answer incorrecto!"
-        error = True
+        if not valid_email(user_email):
+            username_error = "Email incorrecto!"
+            error = True
+        if not valid_password(user_password):
+            username_error = "Password incorrecto!"
+            error = True
+        if not valid_password(user_verify):
+            username_error = "Verify incorrecto!"
+            error = True
+        if not valid_generic(user_name):
+            username_error = "Name incorrecto!"
+            error = True
+        if not valid_generic(user_lastName):
+            username_error = "lastName incorrecto!"
+            error = True
+        if not valid_generic(user_dni):
+            username_error = "dni incorrecto!"
+            error = True
+        if not valid_generic(user_question):
+            username_error = "question incorrecto!"
+            error = True
+        if not valid_generic(user_answer):
+            username_error = "answer incorrecto!"
+            error = True
+
+        if error:
+            self.write_form(sani_email, sani_password, sani_verify, sani_name, sani_lastName, sani_dni, sani_question,
+                            sani_answer,
+                            email_error, password_error, verify_error, name_error, lastName_error, dni_error,
+                            question_error, answer_error)
+        else:
+            user = User.query(User.name == user_name, User.email == user_email).count()
+            if user == 0:
+                u = User()
+                u.email = user_email
+                u.password = user_password
+                u.verify = user_verify
+                u.name = user_name
+                u.lastName = user_lastName
+                u.dni = user_dni
+                u.question = user_question
+                u.answer = user_answer
+                u.put()
+                self.redirect("/welcome?username=%s" % user_name)
+
+            else:
+                self.write_form(sani_email, sani_password, sani_verify, sani_name, sani_lastName, sani_dni,
+                                sani_question, sani_answer,
+                                email_error, password_error, verify_error, name_error, lastName_error, dni_error,
+                                question_error, answer_error)
+                self.response.out.write("Kaixo: %s <p> Ya estabas fichado" % user_name)
 
 
     def escape_html(s):
@@ -215,29 +241,8 @@ GENERIC_RE = re.compile(r" ")
     def valid_generic(generic):
         return GENERIC_RE.match(generic)
 
-    if error:
-        self.write_form(sani_email, sani_password, sani_verify, sani_name, sani_lastName, sani_dni, sani_question, sani_answer,
-                        email_error, password_error, verify_error, name_error, lastName_error, dni_error, question_error, answer_error)
-    else:
-        user= User.query(User.email==user_email
 
-        """
 
-        SEGUIR AQUÍ
-                              Visitante.email==user_email).count()
-    if user==0:
-        u=Visitante()
-        u.nombre=user_username u.email=user_email
-        u.password=user_password
-        u.put()
-        self.redirect("/welcome?username=%s" % user_username)
-
-    else:
-        self.write_form(sani_username, sani_password, sani_verify, sani_email,
-                        username_error, password_error, verify_error, email_error)
-        self.response.out.write ("Kaixo: %s <p> Ya estabas fichado" %user_username)
-
-        """
 
 
 
