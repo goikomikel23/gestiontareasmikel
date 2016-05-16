@@ -25,12 +25,12 @@ from google.appengine.ext import ndb
 formLogin = '''
 <html>
 <body>
-    <form method="post">
+    <form action='/login' method="post">
         <h1 align="center">Welcome</h1>
         <p align="center">
-            Login : <input type="text" name="login"/>
+            Email*: <input type="text" name="email" value="admin@ehu.es" required/>
         <br/>
-        Password: <input type="password" name="password"/>
+        Password*: <input type="password" name="password" value="admin" required/>
         <br/>
         <input type="submit" value="Enviar"/>
         </p>
@@ -45,28 +45,28 @@ signup_form = '''
     <form action='/registerData' method="post">
         <h1 align="center">Registration</h1>
         <p align="center">
-            Email:
-                <input type="text" name="email" placeholder="Email"/>
+            Email*:
+                <input type="text" name="email" placeholder="Email" required/>
                 <!--<div class="error">%(email_error)s</div>-->
         <br/>
-            Password:
-                <input type="password" name="password" placeholder="Password"/>
+            Password*:
+                <input type="password" name="password" placeholder="Password" required/>
                 <!--<div class="error">%(password_error)s</div>-->
         <br/>
-            Repeat Password:
-                <input type="password" name="verify" placeholder="Verify"/>
+            Repeat Password*:
+                <input type="password" name="verify" placeholder="Verify" required/>
                 <!--<div class="error">%(verify_error)s</div>-->
         <br/>
-            Name:
-                <input type="text" name="name" placeholder="Name"/>
+            Name*:
+                <input type="text" name="name" placeholder="Name" required/>
                 <!--<div class="error">%(name_error)s</div>-->
         <br/>
-            LastName:
-                <input type="text" name="lastName" placeholder="Last Name"/>
+            LastName*:
+                <input type="text" name="lastName" placeholder="Last Name" required/>
                 <!--<div class="error">%(lastName_error)s</div>-->
         <br/>
-            DNI:
-                <input type="text" name="dni" placeholder="DNI"/>
+            DNI*:
+                <input type="text" name="dni" placeholder="DNI" required/>
                 <!--<div class="error">%(dni_error)s</div>-->
         <br/>
         <br/>
@@ -85,6 +85,48 @@ signup_form = '''
 </html>
 '''
 
+formAdmin = """
+<html>
+<body>
+    <form>
+        <h1 align="center">Admin Zone</h1>
+        <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
+            <th style="border:1px solid yellowgreen;">Dashboard</th>
+            <tr>
+                <td class="admin">%(access_admin)s</td>
+            </tr>
+            <tr>
+                <td class="admin">%(rol_admin)s</td>
+            </tr>
+            <tr>
+                <td class="admin">%(delete_admin)s</td>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>
+"""
+
+formAccess = """
+<html>
+<body>
+    <form>
+        <h1 align="center">Access Zone</h1>
+        <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
+            <th style="border:1px solid yellowgreen;">Name</th>
+            <th style="border:1px solid yellowgreen;">Last Name</th>
+            <th style="border:1px solid yellowgreen;">Email</th>
+            <tr>
+                <td class="access">%(name_acess)s</td>
+                <td class="access">%(lastName_acess)s</td>
+                <td class="access">%(email_acess)s</td>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>
+"""
+
 
 
 class MainHandler(webapp2.RequestHandler):
@@ -95,6 +137,53 @@ class MainHandler(webapp2.RequestHandler):
 class RegisterForm(webapp2.RequestHandler):
     def get(self):
         self.response.write(signup_form)
+
+class Login(webapp2.RequestHandler):
+
+    def post(self):
+
+        email = self.request.get('email')
+        password = self.request.get('password')
+
+        user = User.query(User.email== email).count()
+
+        if(valid_email(email)):
+            if(user==0):
+                self.response.write(formLogin)
+                self.response.out.write("<p align='Center'>THE INTRODUCED EMAIL IS NOT REGISTERED</p>")
+            else:
+
+                authen = User.query(User.password==password, User.email==email).count()
+
+                if(authen==1):
+                    self.redirect('/admin')
+                else:
+                    self.response.write(formLogin)
+                    self.response.out.write("<p align='Center'>PASSWORD INCORRECT</p>")
+        else:
+            self.response.write(formLogin)
+            self.response.out.write("<p align='Center'>YOUR EMAIL DOESN'T RULES, TRY IT AGAIN</p>")
+
+class Admin(webapp2.RequestHandler):
+    def write_form(self, access_admin="", rol_admin="", delete_admin=""):
+        self.response.out.write(formAdmin %
+                                {"access_admin": "<a href='/access'>Access</a>",
+                                 "rol_admin": "<a href='/rol'>Assign Rol</a>",
+                                 "delete_admin": "<a href='/delete'>Delete User</a>"})
+
+    def get(self): self.write_form()
+
+class Access(webapp2.RequestHandler):
+
+    def write_form(self, name_access="", lastName_access="", email_access=""):
+
+        user = User.query(User.rol == "Unknown")
+        name = user.name
+
+        self.response.out.write(formAccess % {"access_admin": name
+                                              })
+
+    def get(self): self.write_form()
 
 class RegisterData(webapp2.RequestHandler):
     def write_form(self, email="", email_error="", password="", password_error="", verify="", verify_error="", name="",
@@ -127,16 +216,17 @@ class RegisterData(webapp2.RequestHandler):
             u.dni = user_dni
             u.question = user_question
             u.answer = user_answer
+            u.rol = "Unknown"
             u.put()
 
-            self.response.write('<!doctype html><html><body>You have been registered as:<pre>')
-            self.response.write(cgi.escape(self.request.get('email')))
-            self.response.write('</pre></body></html>')
+            self.response.write('<!doctype html><html><body>You have to wait till the administrator gives you access</body></html>')
 
         else:
-            self.response.write('<!doctype html><html><body>The email <pre>')
+            self.response.write('<!doctype html><html><body><pre>The email ')
             self.response.write(cgi.escape(self.request.get('email')))
             self.response.write(' is already registered</pre></body></html>')
+
+
 
 
 def escape_html(s):
@@ -153,6 +243,7 @@ class User(ndb.Model):
     dni = ndb.StringProperty(required=True)
     question = ndb.StringProperty(required=True)
     answer = ndb.StringProperty(required=True)
+    rol = ndb.StringProperty(required=False)
 
 
 
@@ -172,5 +263,8 @@ def valid_generic(generic):
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/register', RegisterForm),
-    ('/registerData', RegisterData)
+    ('/registerData', RegisterData),
+    ('/admin', Admin),
+    ('/login', Login),
+    ('/access', Access)
 ], debug=True)
