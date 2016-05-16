@@ -18,7 +18,9 @@ import cgi
 import re
 
 import webapp2
-import ndb
+from google.appengine.ext import ndb
+
+
 
 formLogin = '''
 <html>
@@ -44,38 +46,37 @@ signup_form = '''
         <h1 align="center">Registration</h1>
         <p align="center">
             Email:
-                <input type="text" name="email value="%(email)s"/>
-                <div class="error">%(email_error)s</div>
+                <input type="text" name="email" placeholder="Email"/>
+                <!--<div class="error">%(email_error)s</div>-->
         <br/>
             Password:
-                <input type="password" name="password" value="%(password)s"/>
-                <div class="error">%(password_error)s</div>
+                <input type="password" name="password" placeholder="Password"/>
+                <!--<div class="error">%(password_error)s</div>-->
         <br/>
             Repeat Password:
-                <input type="password" name="verify" value="%(verify)s"/>
-                <div class="error">%(verify_error)s</div>
+                <input type="password" name="verify" placeholder="Verify"/>
+                <!--<div class="error">%(verify_error)s</div>-->
         <br/>
             Name:
-                <input type="password" name="name" value="%(name)s"/>
-                <div class="error">%(name_error)s</div>
+                <input type="text" name="name" placeholder="Name"/>
+                <!--<div class="error">%(name_error)s</div>-->
         <br/>
             LastName:
-                <input type="password" name="lastName" value="%(lastName)s"/>
-                <div class="error">%(lastName_error)s</div>
+                <input type="text" name="lastName" placeholder="Last Name"/>
+                <!--<div class="error">%(lastName_error)s</div>-->
         <br/>
             DNI:
-                <input type="password" name="dni" valuel="%(dni)s"/>
-                <div class="error">%(dni_error)s</div>
+                <input type="text" name="dni" placeholder="DNI"/>
+                <!--<div class="error">%(dni_error)s</div>-->
         <br/>
         <br/>
-        Recover password Question:
             Secret Question:
-                <input type="password" name="secretQ" value="%(question)s"/>
-                <div class="error">%(question_error)s</div>
+                <input type="text" name="secretQ" placeholder="Your Secret Question"/>
+                <!--<div class="error">%(question_error)s</div>-->
         <br/>
             Answer:
-                <input type="password" name="answer" value="%(answer)s"/>
-                <div class="error">%(answer_error)s</div>
+                <input type="text" name="answer" placeholder="Your Answer"/>
+                <!--<div class="error">%(answer_error)s</div>-->
         <br/>
                 <input type="submit" value="Registrar"/>
         </p>
@@ -96,10 +97,50 @@ class RegisterForm(webapp2.RequestHandler):
         self.response.write(signup_form)
 
 class RegisterData(webapp2.RequestHandler):
+    def write_form(self, email="", email_error="", password="", password_error="", verify="", verify_error="", name="",
+                   name_error="", lastName="", lastName_error="", dni="", dni_error="", question="", question_error="",
+                   answer="", answer_error=""):
+
+        def get(self):
+            self.write_form()
+
+
     def post(self):
-        self.response.write('<!doctype html><html><body>You wrote:<pre>')
-        self.response.write(cgi.escape(self.request.get('email')))
-        self.response.write('</pre></body></html>')
+        user_email = self.request.get('email')
+        user_password = self.request.get('password')
+        user_verify = self.request.get('verify')
+        user_name = self.request.get('name')
+        user_lastName = self.request.get('lastName')
+        user_dni = self.request.get('dni')
+        user_question = self.request.get('question')
+        user_answer = self.request.get('answer')
+
+        user = User.query(User.name == user_name, User.email == user_email).count()
+
+        if user == 0:
+            u = User()
+            u.email = user_email
+            u.password = user_password
+            u.verify = user_verify
+            u.name = user_name
+            u.lastName = user_lastName
+            u.dni = user_dni
+            u.question = user_question
+            u.answer = user_answer
+            u.put()
+
+            self.response.write('<!doctype html><html><body>You have been registered as:<pre>')
+            self.response.write(cgi.escape(self.request.get('email')))
+            self.response.write('</pre></body></html>')
+
+        else:
+            self.response.write('<!doctype html><html><body>The email <pre>')
+            self.response.write(cgi.escape(self.request.get('email')))
+            self.response.write(' is already registered</pre></body></html>')
+
+
+def escape_html(s):
+    return cgi.escape(s, quote=True)
 
 
 class User(ndb.Model):
@@ -114,141 +155,18 @@ class User(ndb.Model):
     answer = ndb.StringProperty(required=True)
 
 
-class SignupHandler: #(session_module.BaseSessionHandler):
-#se declara una función ...
-    def write_form (self, email="", email_error="", password="", password_error="",verify="", verify_error="", name="",
-                    name_error="", lastName="", lastName_error="", dni="", dni_error="", question="", question_error="",
-                    answer="", answer_error=""):
-
-        self.response.out.write(signup_form % {
-            "email" : email,
-            "email_error" : email_error,
-            "password" : password,
-            "password_error": password_error,
-            "verify" : verify,
-            "verify_error": verify_error,
-            "name" : name,
-            "name_error": name_error,
-            "lastName" : lastName,
-            "lastName_error": lastName_error,
-            "dni" : dni,
-            "dni_error" : dni_error,
-            "question" : question,
-            "question_error": question_error,
-            "answer" : answer,
-            "answer_error": answer_error,
-            })
-
-
-    def get(self):
-        self.write_form()
-
-
-    def post(self):
-        user_email = self.request.get('email')
-        user_password = self.request.get('password')
-        user_verify = self.request.get('verify')
-        user_name = self.request.get('name')
-        user_lastName = self.request.get('lastName')
-        user_dni = self.request.get('dni')
-        user_question = self.request.get('question')
-        user_answer = self.request.get('answer')
-        sani_email = self.escape_html(user_email)
-        sani_password = self.escape_html(user_password)
-        sani_verify = self.escape_html(user_verify)
-        sani_name = self.escape_html(user_name)
-        sani_lastName = self.escape_html(user_lastName)
-        sani_dni = self.escape_html(user_dni)
-        sani_question = self.escape_html(user_question)
-        sani_answer = self.escape_html(user_answer)
-        email_error = ""
-        password_error = ""
-        verify_error = ""
-        name_error = ""
-        lastName_error = ""
-        dni_error = ""
-        question_error = ""
-        answer_error = ""
-
-        error = False
-
-        if not valid_email(user_email):
-            username_error = "Email incorrecto!"
-            error = True
-        if not valid_password(user_password):
-            username_error = "Password incorrecto!"
-            error = True
-        if not valid_password(user_verify):
-            username_error = "Verify incorrecto!"
-            error = True
-        if not valid_generic(user_name):
-            username_error = "Name incorrecto!"
-            error = True
-        if not valid_generic(user_lastName):
-            username_error = "lastName incorrecto!"
-            error = True
-        if not valid_generic(user_dni):
-            username_error = "dni incorrecto!"
-            error = True
-        if not valid_generic(user_question):
-            username_error = "question incorrecto!"
-            error = True
-        if not valid_generic(user_answer):
-            username_error = "answer incorrecto!"
-            error = True
-
-        if error:
-            self.write_form(sani_email, sani_password, sani_verify, sani_name, sani_lastName, sani_dni, sani_question,
-                            sani_answer,
-                            email_error, password_error, verify_error, name_error, lastName_error, dni_error,
-                            question_error, answer_error)
-        else:
-            user = User.query(User.name == user_name, User.email == user_email).count()
-            if user == 0:
-                u = User()
-                u.email = user_email
-                u.password = user_password
-                u.verify = user_verify
-                u.name = user_name
-                u.lastName = user_lastName
-                u.dni = user_dni
-                u.question = user_question
-                u.answer = user_answer
-                u.put()
-                self.redirect("/welcome?username=%s" % user_name)
-
-            else:
-                self.write_form(sani_email, sani_password, sani_verify, sani_name, sani_lastName, sani_dni,
-                                sani_question, sani_answer,
-                                email_error, password_error, verify_error, name_error, lastName_error, dni_error,
-                                question_error, answer_error)
-                self.response.out.write("Kaixo: %s <p> Ya estabas fichado" % user_name)
-
-
-    def escape_html(s):
-        return cgi.escape(s, quote=True)
-
 
 EMAIL_RE = re.compile(r"^[\S]+@[\S]+\.[\S]+$")
 PASSWORD_RE = re.compile(r"^.{3,20}$")
 GENERIC_RE = re.compile(r" ")
 
 
-    def valid_email(email):
-        return EMAIL_RE.match(email)
-    def valid_password(password):
-        return PASSWORD_RE.match(password)
-    def valid_generic(generic):
-        return GENERIC_RE.match(generic)
-
-
-
-
-
-
-
-
-
+def valid_email(email):
+    return EMAIL_RE.match(email)
+def valid_password(password):
+    return PASSWORD_RE.match(password)
+def valid_generic(generic):
+    return GENERIC_RE.match(generic)
 
 
 app = webapp2.WSGIApplication([
@@ -256,4 +174,3 @@ app = webapp2.WSGIApplication([
     ('/register', RegisterForm),
     ('/registerData', RegisterData)
 ], debug=True)
-

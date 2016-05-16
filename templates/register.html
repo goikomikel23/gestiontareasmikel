@@ -1,0 +1,42 @@
+<html>
+<body>
+    <form action='/registerData' method="post">
+        <h1 align="center">Registration</h1>
+        <p align="center">
+            Email:
+                <input type="text" name="email value="%(email)s"/>
+        <br/>
+            Password:
+                <input type="password" name="password" value="%(password)s"/>
+        <br/>
+            Repeat Password:
+                <input type="password" name="verify" value="%(verify)s"/>
+                <div class="error">%(verify_error)s</div>
+        <br/>
+            Name:
+                <input type="password" name="name" value="%(name)s"/>
+                <div class="error">%(name_error)s</div>
+        <br/>
+            LastName:
+                <input type="password" name="lastName" value="%(lastName)s"/>
+                <div class="error">%(lastName_error)s</div>
+        <br/>
+            DNI:
+                <input type="password" name="dni" valuel="%(dni)s"/>
+                <div class="error">%(dni_error)s</div>
+        <br/>
+        <br/>
+        Recover password Question:
+            Secret Question:
+                <input type="password" name="secretQ" value="%(question)s"/>
+                <div class="error">%(question_error)s</div>
+        <br/>
+            Answer:
+                <input type="password" name="answer" value="%(answer)s"/>
+                <div class="error">%(answer_error)s</div>
+        <br/>
+                <input type="submit" value="Registrar"/>
+        </p>
+    </form>
+</body>
+</html>
