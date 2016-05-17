@@ -17,9 +17,13 @@
 import cgi
 import re
 import webapp2
+from webapp2_extras import sessions
 from google.appengine.ext import ndb
 
-
+myconfig_dict = {}
+myconfig_dict['webapp2_extras.sessions'] = {
+  'secret_key': 'aegoradhfgnfiosgbnodfngs',
+}
 
 
 
@@ -29,9 +33,9 @@ formLogin = '''
     <form action='/login' method="post">
         <h1 align="center">Welcome</h1>
         <p align="center">
-            Email*: <input type="text" name="email" value="admin@ehu.es" required/>
+            Email*: <input type="text" name="email" value="pepe@ikasle.ehu.es" required/>
         <br/>
-        Password*: <input type="password" name="password" value="admin" required/>
+        Password*: <input type="password" name="password" value="pepe" required/>
         <br/>
         <input type="submit" value="Enviar"/>
         </p>
@@ -173,17 +177,77 @@ formRol2 = """
 </html>
 """
 
+formDelete = """
+<html>
+<body>
+    <form action='/deleteUser' method='POST'>
+        <h1 align="center">Delete Zone</h1>
+        <h4 align="center">Delete the users you want</h4>
+        <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
+            <th style="border:1px solid yellowgreen;">Name</th>
+            <th style="border:1px solid yellowgreen;">Last Name</th>
+            <th style="border:1px solid yellowgreen;">Email</th>
+            <th style="border:1px solid yellowgreen;">Rol</th>
+            <th style="border:1px solid yellowgreen;">Delete</th>
+            <tr class="access">
+                %(user_access)s
+            </tr>
+        </table>
+        <p align="center"><input type='Submit' value='Delete Selected'/></p>
+    </form>
+</body>
+</html>
+"""
+
+formUsers = """
+<html>
+<body>
+        <h4 align="center">Users in your database</h4>
+        <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
+            <th style="border:1px solid yellowgreen;">Name</th>
+            <th style="border:1px solid yellowgreen;">Last Name</th>
+            <th style="border:1px solid yellowgreen;">Email</th>
+            <th style="border:1px solid yellowgreen;">Rol</th>
+            <tr class="access">
+                %(user_access)s
+            </tr>
+        </table>
+</body>
+</html>
+"""
+
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         self.response.write(formLogin)
         self.response.out.write("<p align='Center'><a href='/register'>Register</a></p>")
 
+
+"""class BaseHandler(webapp2.RequestHandler):
+    def dispatch(self):
+        # Get a session store for this request.
+        self.session_store = sessions.get_store(request=self.request)
+
+        try:
+            # Dispatch the request.
+            webapp2.RequestHandler.dispatch(self)
+        finally:
+            # Save all sessions.
+            self.session_store.save_sessions(self.response)
+
+    @webapp2.cached_property
+    def session(self):
+        # Returns a session using the default cookie key.
+        return self.session_store.get_session()
+        """
+
 class RegisterForm(webapp2.RequestHandler):
     def get(self):
         self.response.write(signup_form)
 
 class Login(webapp2.RequestHandler):
+
+
 
     def post(self):
 
@@ -199,9 +263,36 @@ class Login(webapp2.RequestHandler):
             else:
 
                 authen = User.query(User.password==password, User.email==email).count()
+                user = ndb.gql("Select * from User where email='"+email+"'").get()
 
                 if(authen==1):
-                    self.redirect('/admin')
+
+                    if(user.rol=='Unknown'):
+                        self.response.write("<!doctype html><html><body><h3 align='center'>You have to wait till the administrator gives you access</h3><p align='center'><a href='/'>Return</a></body></html>")
+                    elif(user.rol=='Student'):
+
+                        #self.session['Rol'] = "Student"
+                        #self.session['Email'] = email
+
+                        #self.response.write(str(self.session['Rol']))
+                        #self.response.write(str(self.session['Email']))
+
+                        self.redirect('/student')
+
+
+
+                    elif(user.rol=='Professor'):
+
+                        #self.session['Rol'] = "Professor"
+                        #self.session['Email'] = email
+
+                        self.redirect('/professor')
+
+                    else:
+                        #self.session['Rol'] = "Admin"
+                        #self.session['Email'] = email
+
+                        self.redirect('/admin')
                 else:
                     self.response.write(formLogin)
                     self.response.out.write("<p align='Center'>PASSWORD INCORRECT</p>")
@@ -216,7 +307,50 @@ class Admin(webapp2.RequestHandler):
                                  "rol_admin": "<a href='/rol'>Change Rol</a>",
                                  "delete_admin": "<a href='/delete'>Delete User</a>"})
 
+        users = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'")
+        count = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'").count()
+
+        sentence2 = ""
+
+        if (count == 0):
+            self.response.out.write(
+                formUsers % {"user_access": "<p align='center'>There're not users in your database</p>"})
+        else:
+            for user in users:
+                sentence = "<tr><td>" + user.name + "</td><td>" + user.lastName + "</td><td>" + user.email + "</td><td>" + user.rol + "</td></tr>"
+                sentence2 = sentence2 + sentence
+
+
+            self.response.out.write(formUsers % {"user_access": sentence2})
+
     def get(self): self.write_form()
+
+class Professor(webapp2.RequestHandler):
+    def write_form(self, access_admin="", rol_admin="", delete_admin=""):
+        self.response.out.write(formAdmin %
+                                {"access_admin": "<a href='/access'>Access</a>",
+                                 "rol_admin": "<a href='/rol'>Change Rol</a>",
+                                 "delete_admin": "<a href='/delete'>Delete User</a>"})
+
+        users = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'")
+        count = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'").count()
+
+        sentence2 = ""
+
+        if (count == 0):
+            self.response.out.write(
+                formUsers % {"user_access": "<p align='center'>There're not users in your database</p>"})
+        else:
+            for user in users:
+                sentence = "<tr><td>" + user.name + "</td><td>" + user.lastName + "</td><td>" + user.email + "</td><td>" + user.rol + "</td></tr>"
+                sentence2 = sentence2 + sentence
+
+
+            self.response.out.write(formUsers % {"user_access": sentence2})
+
+    def get(self): self.write_form()
+
+
 
 class Access(webapp2.RequestHandler):
 
@@ -255,19 +389,6 @@ class ChangeRol(webapp2.RequestHandler):
 
         self.response.out.write(formAccess2 % {"user_access": "THE ROLS HAVE BEEN CHANGED"})
 
-class ChangeRol3(webapp2.RequestHandler):
-
-    def post(self):
-        users = ndb.gql("SELECT * FROM User WHERE email!='admin@ehu.es'")
-
-        for user in users:
-            rol = self.request.get(user.name)
-
-            if rol:
-                user.rol = rol
-                user.put()
-
-        self.response.out.write(formRol2 % {"user_access": "THE ROLS HAVE BEEN CHANGED"})
 
 class ChangeRol2(webapp2.RequestHandler):
 
@@ -293,6 +414,64 @@ class ChangeRol2(webapp2.RequestHandler):
 
     def get(self):
         self.write_form()
+
+
+class ChangeRol3(webapp2.RequestHandler):
+
+    def post(self):
+        users = ndb.gql("SELECT * FROM User WHERE email!='admin@ehu.es'")
+
+        for user in users:
+            rol = self.request.get(user.name)
+
+            if rol:
+                user.rol = rol
+                user.put()
+
+        self.response.out.write(formRol2 % {"user_access": "THE ROLS HAVE BEEN CHANGED"})
+
+
+class DeleteUser(webapp2.RequestHandler):
+
+    def write_form(self, user_access=""):
+
+        users = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'")
+        count = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'").count()
+
+        sentence2 = ""
+
+        if (count == 0):
+            self.response.out.write(
+                formDelete % {"user_access": "<p align='center'>There're not users in your database</p>"})
+        else:
+            for user in users:
+                sentence = "<tr><td>" + user.name + "</td><td>" + user.lastName + "</td><td>" + user.email + "</td><td>"+ user.rol + "</td>"
+                assignRol = "<td align='center'class='assignRol'><input type='radio' name='" + user.name + "' value='Delete'></td></tr>"
+
+                sentence = sentence + assignRol
+                sentence2 = sentence2 + sentence
+
+            self.response.out.write(formDelete % {"user_access": sentence2})
+
+    def get(self):
+        self.write_form()
+
+class DeleteUser2(webapp2.RequestHandler):
+
+    def post(self):
+        users = ndb.gql("SELECT * FROM User WHERE email!='admin@ehu.es'")
+
+        for user in users:
+            rol = self.request.get(user.name)
+
+            if rol:
+                user.delete()
+                #HACER BIEN EL BORRADO, NO FUNCIONA
+
+
+        self.response.out.write(formRol2 % {"user_access": "THE ROLS HAVE BEEN CHANGED"})
+
+
 
 class RegisterData(webapp2.RequestHandler):
     def write_form(self, email="", email_error="", password="", password_error="", verify="", verify_error="", name="",
@@ -378,5 +557,9 @@ app = webapp2.WSGIApplication([
     ('/access', Access),
     ('/changeRol', ChangeRol),
     ('/changeRol3', ChangeRol3),
-    ('/rol', ChangeRol2)
+    ('/rol', ChangeRol2),
+    ('/delete', DeleteUser),
+    ('/deleteUser', DeleteUser2),
+    ('/student', Student),
+    ('/professor', Professor)
 ], debug=True)
