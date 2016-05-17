@@ -16,9 +16,10 @@
 #
 import cgi
 import re
-
 import webapp2
 from google.appengine.ext import ndb
+
+
 
 
 
@@ -110,23 +111,67 @@ formAdmin = """
 formAccess = """
 <html>
 <body>
-    <form>
+    <form action='/changeRol' method='POST'>
         <h1 align="center">Access Zone</h1>
+        <h4 align="center">Here you have the users requesting access to your database. Assign them a rol to give access.</h4>
         <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
             <th style="border:1px solid yellowgreen;">Name</th>
             <th style="border:1px solid yellowgreen;">Last Name</th>
             <th style="border:1px solid yellowgreen;">Email</th>
-            <tr>
-                <td class="access">%(name_acess)s</td>
-                <td class="access">%(lastName_acess)s</td>
-                <td class="access">%(email_acess)s</td>
+            <th style="border:1px solid yellowgreen;">Rol</th>
+            <tr class="access">
+                %(user_access)s
             </tr>
         </table>
+        <p align="center"><input type='Submit' value='Change'/></p>
     </form>
 </body>
 </html>
 """
 
+formAccess2 = """
+<html>
+<body>
+    <form>
+        <h1 align="center">Access Zone</h1>
+        <p align="center">%(user_access)s</p>
+    </form>
+</body>
+</html>
+"""
+
+formRol = """
+<html>
+<body>
+    <form action='/changeRol3' method='POST'>
+        <h1 align="center">Rols Zone</h1>
+        <h4 align="center">Change the rol to the users you want</h4>
+        <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
+            <th style="border:1px solid yellowgreen;">Name</th>
+            <th style="border:1px solid yellowgreen;">Last Name</th>
+            <th style="border:1px solid yellowgreen;">Email</th>
+            <th style="border:1px solid yellowgreen;">Current Rol</th>
+            <th style="border:1px solid yellowgreen;">Change Rol</th>
+            <tr class="access">
+                %(user_access)s
+            </tr>
+        </table>
+        <p align="center"><input type='Submit' value='Change'/></p>
+    </form>
+</body>
+</html>
+"""
+
+formRol2 = """
+<html>
+<body>
+    <form>
+        <h1 align="center">Rols Zone</h1>
+        <p align="center">%(user_access)s</p>
+    </form>
+</body>
+</html>
+"""
 
 
 class MainHandler(webapp2.RequestHandler):
@@ -168,22 +213,86 @@ class Admin(webapp2.RequestHandler):
     def write_form(self, access_admin="", rol_admin="", delete_admin=""):
         self.response.out.write(formAdmin %
                                 {"access_admin": "<a href='/access'>Access</a>",
-                                 "rol_admin": "<a href='/rol'>Assign Rol</a>",
+                                 "rol_admin": "<a href='/rol'>Change Rol</a>",
                                  "delete_admin": "<a href='/delete'>Delete User</a>"})
 
     def get(self): self.write_form()
 
 class Access(webapp2.RequestHandler):
 
-    def write_form(self, name_access="", lastName_access="", email_access=""):
+    def write_form(self, user_access=""):
 
-        user = User.query(User.rol == "Unknown")
-        name = user.name
+        users = ndb.gql("SELECT * FROM User WHERE rol = 'Unknown'")
+        count = ndb.gql("SELECT * FROM User WHERE rol = 'Unknown'").count()
 
-        self.response.out.write(formAccess % {"access_admin": name
-                                              })
+        sentence2 = ""
 
-    def get(self): self.write_form()
+        if(count==0):
+            self.response.out.write(formAccess2 % {"user_access": "<p align='center'>There're not users requesting access</p>"})
+        else:
+            for user in users:
+                sentence = "<tr><td>"+user.name+"</td><td>"+user.lastName+"</td><td>"+user.email+"</td>"
+                assignRol = "<td class='assignRol'><input type='radio' name='"+user.name+"' value='Student'>Student<input type='radio' name='"+user.name+"' value='Professor'>Professor</td></tr>"
+
+                sentence = sentence + assignRol
+
+                sentence2 = sentence2 + sentence
+
+            self.response.out.write(formAccess % {"user_access": sentence2})
+
+    def get(self):
+        self.write_form()
+
+class ChangeRol(webapp2.RequestHandler):
+
+    def post(self):
+        users = ndb.gql("SELECT * FROM User WHERE rol = 'Unknown'")
+
+        for user in users:
+            rol = self.request.get(user.name)
+            user.rol = rol
+            user.put()
+
+        self.response.out.write(formAccess2 % {"user_access": "THE ROLS HAVE BEEN CHANGED"})
+
+class ChangeRol3(webapp2.RequestHandler):
+
+    def post(self):
+        users = ndb.gql("SELECT * FROM User WHERE email!='admin@ehu.es'")
+
+        for user in users:
+            rol = self.request.get(user.name)
+
+            if rol:
+                user.rol = rol
+                user.put()
+
+        self.response.out.write(formRol2 % {"user_access": "THE ROLS HAVE BEEN CHANGED"})
+
+class ChangeRol2(webapp2.RequestHandler):
+
+    def write_form(self, user_access=""):
+
+        users = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'")
+        count = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'").count()
+
+        sentence2 = ""
+
+        if (count == 0):
+            self.response.out.write(
+                formRol % {"user_access": "<p align='center'>There're not users</p>"})
+        else:
+            for user in users:
+                sentence = "<tr><td>" + user.name + "</td><td>" + user.lastName + "</td><td>" + user.email + "</td><td>"+ user.rol + "</td>"
+                assignRol = "<td class='assignRol'><input type='radio' name='" + user.name + "' value='Student'>Student<input type='radio' name='" + user.name + "' value='Professor'>Professor</td></tr>"
+
+                sentence = sentence + assignRol
+                sentence2 = sentence2 + sentence
+
+            self.response.out.write(formRol % {"user_access": sentence2})
+
+    def get(self):
+        self.write_form()
 
 class RegisterData(webapp2.RequestHandler):
     def write_form(self, email="", email_error="", password="", password_error="", verify="", verify_error="", name="",
@@ -266,5 +375,8 @@ app = webapp2.WSGIApplication([
     ('/registerData', RegisterData),
     ('/admin', Admin),
     ('/login', Login),
-    ('/access', Access)
+    ('/access', Access),
+    ('/changeRol', ChangeRol),
+    ('/changeRol3', ChangeRol3),
+    ('/rol', ChangeRol2)
 ], debug=True)
