@@ -18,12 +18,8 @@ import cgi
 import re
 import webapp2
 from webapp2_extras import sessions
+#from webapp2_extras import session_module
 from google.appengine.ext import ndb
-
-myconfig_dict = {}
-myconfig_dict['webapp2_extras.sessions'] = {
-  'secret_key': 'aegoradhfgnfiosgbnodfngs',
-}
 
 
 
@@ -33,9 +29,9 @@ formLogin = '''
     <form action='/login' method="post">
         <h1 align="center">Welcome</h1>
         <p align="center">
-            Email*: <input type="text" name="email" value="pepe@ikasle.ehu.es" required/>
+            Email*: <input type="text" name="email" value="josean@ehu.es" required/>
         <br/>
-        Password*: <input type="password" name="password" value="pepe" required/>
+        Password*: <input type="password" name="password" value="josean" required/>
         <br/>
         <input type="submit" value="Enviar"/>
         </p>
@@ -111,6 +107,29 @@ formAdmin = """
 </body>
 </html>
 """
+
+formProfessor = """
+<html>
+<body>
+    <form>
+        <h1 align="center">Professor Zone</h1>
+        <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
+            <th style="border:1px solid yellowgreen;">Dashboard</th>
+            <tr>
+                <td class="professor">%(subject_professor)s</td>
+            </tr>
+            <tr>
+                <td class="professor">%(rol_admin)s</td>
+            </tr>
+            <tr>
+                <td class="professor">%(delete_admin)s</td>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>
+"""
+
 
 formAccess = """
 <html>
@@ -216,6 +235,107 @@ formUsers = """
 </html>
 """
 
+formSubject = """
+<html>
+<body>
+    <form action='/newSubject' method="post">
+        <h4 align="center">Add a new subject</h4>
+        <p align="center">
+            Name
+        <br/>
+            <input type="text" name="name" required/>
+        <br/>
+            Code
+        <br/>
+            <input type="text" name="code" required/>
+        <br/>
+            Description
+         <br/>
+            <textarea type="text" name="description"></textarea>
+        <br/>
+        <input type="submit" value="Create"/>
+        </p>
+    </form>
+</body>
+</html>
+"""
+
+formSubjects = """
+<html>
+<body>
+        <h4 align="center">Your Subjects</h4>
+        <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
+            <th style="border:1px solid yellowgreen;">Code</th>
+            <th style="border:1px solid yellowgreen;">Name</th>
+            <th style="border:1px solid yellowgreen;">Description</th>
+            <tr class="subjects">
+                %(professor_subjects)s
+            </tr>
+        </table>
+</body>
+</html>
+"""
+
+formTasksDash = """
+<html>
+<body>
+    <form>
+        <h1 align="center">Tasks</h1>
+        <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
+            <th style="border:1px solid yellowgreen;">Dashboard</th>
+            <tr>
+                <td class="tasks">%(tasks_add)s</td>
+            </tr>
+            <tr>
+                <td class="tasks">%(tasks_delete)s</td>
+            </tr>
+        </table>
+    </form>
+</body>
+</html>
+"""
+
+formTasks = """
+<html>
+<body>
+        <h4 align="center">Your Tasks</h4>
+        <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
+            <th style="border:1px solid yellowgreen;">Subject</th>
+            <th style="border:1px solid yellowgreen;">Code</th>
+            <th style="border:1px solid yellowgreen;">Description</th>
+            <tr class="access">
+                %(tasks)s
+            </tr>
+        </table>
+</body>
+</html>
+"""
+
+formAddTask = """
+<html>
+<body>
+    <form action='/newTask' method="post">
+        <h4 align="center">Add a new task</h4>
+        <p align="center">
+            Subject
+        <br/>
+            %(subject_choose)s
+        <br/>
+            Code
+        <br/>
+            <input type="text" name="code" required/>
+        <br/>
+            Description
+         <br/>
+            <textarea type="text" name="description"></textarea>
+        <br/>
+        <input type="submit" value="Create"/>
+        </p>
+    </form>
+</body>
+</html>
+"""
+
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
@@ -223,23 +343,6 @@ class MainHandler(webapp2.RequestHandler):
         self.response.out.write("<p align='Center'><a href='/register'>Register</a></p>")
 
 
-"""class BaseHandler(webapp2.RequestHandler):
-    def dispatch(self):
-        # Get a session store for this request.
-        self.session_store = sessions.get_store(request=self.request)
-
-        try:
-            # Dispatch the request.
-            webapp2.RequestHandler.dispatch(self)
-        finally:
-            # Save all sessions.
-            self.session_store.save_sessions(self.response)
-
-    @webapp2.cached_property
-    def session(self):
-        # Returns a session using the default cookie key.
-        return self.session_store.get_session()
-        """
 
 class RegisterForm(webapp2.RequestHandler):
     def get(self):
@@ -247,12 +350,11 @@ class RegisterForm(webapp2.RequestHandler):
 
 class Login(webapp2.RequestHandler):
 
-
-
     def post(self):
 
         email = self.request.get('email')
         password = self.request.get('password')
+
 
         user = User.query(User.email== email).count()
 
@@ -271,17 +373,30 @@ class Login(webapp2.RequestHandler):
                         self.response.write("<!doctype html><html><body><h3 align='center'>You have to wait till the administrator gives you access</h3><p align='center'><a href='/'>Return</a></body></html>")
                     elif(user.rol=='Student'):
 
-                        #self.session['Rol'] = "Student"
-                        #self.session['Email'] = email
+                        """if self.session.get('counter'):
+                            self.response.out.write('<b>La sesion existe</b><p>')
+                            counter = self.session.get('counter')
+                            self.session['counter'] = counter + 1
+                            self.response.out.write('<h2>Numero de accesos = ' + str(self.session.get('counter')) + '</h2>')
+                        else:
+                            self.response.out.write('<b>Sesion Creada</b><p>')
+                            self.session['counter'] = 1
+                            self.response.out.write('<h2>Numero de accesos = ' + str(self.session.get('counter')) + '</h2>')
 
-                        #self.response.write(str(self.session['Rol']))
-                        #self.response.write(str(self.session['Email']))
+
+                        self.session['Rol'] = "Student"
+                        self.session['Email'] = email
+
+                        self.response.write(formLogin)
+                        self.response.out.write("<p align='Center'>"+self.session['Rol']+"</p>")"""
 
                         self.redirect('/student')
 
 
 
                     elif(user.rol=='Professor'):
+
+
 
                         #self.session['Rol'] = "Professor"
                         #self.session['Email'] = email
@@ -326,6 +441,172 @@ class Admin(webapp2.RequestHandler):
     def get(self): self.write_form()
 
 class Professor(webapp2.RequestHandler):
+    def write_form(self, subject_professor="", rol_admin="", delete_admin=""):
+
+        session = 'josean@ehu.es'
+
+        self.response.out.write(formProfessor %
+                                {"subject_professor": "<a href='/subject'>Add new subject</a>",
+                                 "rol_admin": "<a href='/Tasks'>Tasks</a>",
+                                 "delete_admin": "<a href='/delete'>Delete User</a>"})
+
+        subs = ndb.gql("SELECT * FROM Subject where professor='"+session+"'")
+        count = ndb.gql("SELECT * FROM Subject where professor='"+session+"'").count()
+
+        sentence2 = ""
+
+        if (count == 0):
+            self.response.out.write(
+                formSubjects % {"professor_subjects": "<p align='center'>You have not any subject assigned</p>"})
+        else:
+            for sub in subs:
+                sentence = "<tr><td>" + sub.code + "</td><td>" + sub.name + "</td><td>" + sub.description + "</td></tr>"
+                sentence2 = sentence2 + sentence
+
+
+            self.response.out.write(formSubjects % {"professor_subjects": sentence2})
+
+    def get(self): self.write_form()
+
+
+class DeleteTask(webapp2.RequestHandler):
+
+    def get(self):
+        self.response.write(
+            "<!doctype html><html><body><h3 align='center'>This page is under construction</h3><p align='center'><img src='images/construction.jpg' style='width:304px;height:228px;'></p><p align='center'><a href='/tasks'>Return</a></p></body></html>")
+
+
+class NewTask(webapp2.RequestHandler):
+
+    def post(self):
+
+        session = 'josean@ehu.es'
+
+        task_code = self.request.get('code')
+        task_description = self.request.get('description')
+        task_subject = self.request.get('subject')
+
+        task = Task.query(Task.taskCode == task_code).count()
+
+        if task == 0:
+            s = Task()
+            s.taskCode = task_code
+            s.description = task_description
+            s.subjectCode = task_subject
+            s.professor = session
+
+            s.put()
+
+            self.response.write(
+                '<!doctype html><html><body><p align="Center">The task has been added successfully</p></body></html>')
+
+        else:
+            self.response.write('<!doctype html><html><body><pre>The task ')
+            self.response.write(' is already registered</pre></body></html>')
+
+    def write_form(self, subject_choose=""):
+
+        session = 'josean@ehu.es'
+
+        subs = ndb.gql("select * from Subject where professor='josean@ehu.es'")
+
+        sentence = "<select name='subject'>"
+
+        for sub in subs:
+            sentence2 = sentence + "<option value='"+sub.code+"'>"+sub.name+"</option>"
+            sentence = sentence2
+
+        sentence = sentence + "</select>"
+
+        self.response.out.write(formAddTask %
+                                {"subject_choose": sentence
+                                 })
+
+        tasks = ndb.gql("SELECT * FROM Task where professor='"+session+"'")
+        count = ndb.gql("SELECT * FROM Task where professor='"+session+"'").count()
+
+        sentence2 = ""
+
+        if (count == 0):
+            self.response.out.write(
+                formTasks % {"tasks": "<p align='center'>There're not users in your database</p>"})
+        else:
+            for task in tasks:
+                sentence = "<tr><td>" + task.subjectCode + "</td><td>" + task.taskCode + "</td><td>" + task.description + "</td></tr>"
+                sentence2 = sentence2 + sentence
+
+            self.response.out.write(formTasks % {"tasks": sentence2})
+
+    def get(self):
+        self.write_form()
+
+
+class Tasks(webapp2.RequestHandler):
+
+    def write_form(self, tasks_add="",tasks_delete=""):
+
+        print (    "<img src='construction.jpg'>")
+
+        session = 'josean@ehu.es'
+
+        self.response.out.write(formTasksDash %
+                                {"tasks_add": "<a href='/newTask'>New task</a>",
+                                 "tasks_delete": "<a href='/deleteTask'>Delete Task</a>"
+                                 })
+
+
+        tasks = ndb.gql("SELECT * FROM Task where professor='" + session + "'")
+        count = ndb.gql("SELECT * FROM Task where professor='" + session + "'").count()
+
+        sentence2 = ""
+
+        if (count == 0):
+            self.response.out.write(
+                formTasks % {"tasks": "<p align='center'>There're not users in your database</p>"})
+        else:
+            for task in tasks:
+                sentence = "<tr><td>" + task.subjectCode + "</td><td>" + task.taskCode + "</td><td>" + task.description + "</td></tr>"
+                sentence2 = sentence2 + sentence
+
+            self.response.out.write(formTasks % {"tasks": sentence2})
+
+    def get(self):
+        self.write_form()
+
+class SubjectClass(webapp2.RequestHandler):
+
+    def get(self):
+        self.response.write(formSubject)
+
+class NewSubject(webapp2.RequestHandler):
+
+    def post(self):
+
+        session = "josean@ehu.es"
+
+        subject_name = self.request.get('name')
+        subject_code = self.request.get('code')
+        subject_description = self.request.get('description')
+
+        sub = Subject.query(Subject.name == subject_name, Subject.code == subject_code).count()
+
+        if sub == 0:
+            s = Subject()
+            s.name = subject_name
+            s.code = subject_code
+            s.description = subject_description
+            s.professor = session
+
+            s.put()
+
+            self.response.write('<!doctype html><html><body><p align="Center">The subject has been added successfully</p></body></html>')
+
+        else:
+            self.response.write('<!doctype html><html><body><pre>The email ')
+            self.response.write(cgi.escape(self.request.get('email')))
+            self.response.write(' is already registered</pre></body></html>')
+
+class Student(webapp2.RequestHandler):
     def write_form(self, access_admin="", rol_admin="", delete_admin=""):
         self.response.out.write(formAdmin %
                                 {"access_admin": "<a href='/access'>Access</a>",
@@ -349,7 +630,6 @@ class Professor(webapp2.RequestHandler):
             self.response.out.write(formUsers % {"user_access": sentence2})
 
     def get(self): self.write_form()
-
 
 
 class Access(webapp2.RequestHandler):
@@ -533,6 +813,19 @@ class User(ndb.Model):
     answer = ndb.StringProperty(required=True)
     rol = ndb.StringProperty(required=False)
 
+class Subject(ndb.Model):
+    created = ndb.DateTimeProperty(auto_now_add=True)
+    name = ndb.StringProperty(required=True)
+    description = ndb.StringProperty(required=True)
+    code = ndb.StringProperty(required=True)
+    professor = ndb.StringProperty(required=True)
+
+class Task(ndb.Model):
+    created = ndb.DateTimeProperty(auto_now_add=True)
+    subjectCode = ndb.StringProperty(required=True)
+    taskCode = ndb.StringProperty(required=True)
+    description = ndb.StringProperty(required=True)
+    professor = ndb.StringProperty(required=True)
 
 
 EMAIL_RE = re.compile(r"^[\S]+@[\S]+\.[\S]+$")
@@ -561,5 +854,10 @@ app = webapp2.WSGIApplication([
     ('/delete', DeleteUser),
     ('/deleteUser', DeleteUser2),
     ('/student', Student),
-    ('/professor', Professor)
+    ('/professor', Professor),
+    ('/subject', SubjectClass),
+    ('/newSubject', NewSubject),
+    ('/Tasks', Tasks),
+    ('/newTask', NewTask),
+    ('/deleteTask', DeleteTask)
 ], debug=True)
