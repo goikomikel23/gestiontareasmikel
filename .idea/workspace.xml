@@ -2,9 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="7db3c7cc-5acb-4317-9fb3-b2fb8de48c63" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Viejos/main.py" afterPath="$PROJECT_DIR$/Viejos/main.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app.yaml" afterPath="$PROJECT_DIR$/app.yaml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main.py" afterPath="$PROJECT_DIR$/main.py" />
     </list>
     <ignored path="gestiontareasmikel.iws" />
@@ -29,21 +26,11 @@
       <file leaf-file-name="main.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="276">
-              <caret line="475" column="77" selection-start-line="475" selection-start-column="77" selection-end-line="475" selection-end-column="77" />
+            <state relative-caret-position="231">
+              <caret line="214" column="32" selection-start-line="214" selection-start-column="32" selection-end-line="214" selection-end-column="32" />
               <folding>
                 <element signature="e#601#611#0" expanded="true" />
               </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="webapp2.py" pinned="false" current-in-tab="false">
-        <entry file="file:///Library/Python/2.7/site-packages/webapp2.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="496">
-              <caret line="1986" column="0" selection-start-line="1986" selection-start-column="0" selection-end-line="1986" selection-end-column="0" />
-              <folding />
             </state>
           </provider>
         </entry>
@@ -53,7 +40,9 @@
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="330">
               <caret line="22" column="0" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="0" />
-              <folding />
+              <folding>
+                <marker date="1463562856000" expanded="true" signature="162:175" placeholder="f" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -380,7 +369,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="300">
           <caret line="20" column="0" selection-start-line="20" selection-start-column="0" selection-end-line="20" selection-end-column="0" />
-          <folding />
+          <folding>
+            <marker date="1463562856000" expanded="true" signature="162:175" placeholder="f" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -506,7 +497,9 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="330">
           <caret line="22" column="0" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="0" />
-          <folding />
+          <folding>
+            <marker date="1463562856000" expanded="true" signature="162:175" placeholder="f" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -520,8 +513,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="276">
-          <caret line="475" column="77" selection-start-line="475" selection-start-column="77" selection-end-line="475" selection-end-column="77" />
+        <state relative-caret-position="231">
+          <caret line="214" column="32" selection-start-line="214" selection-start-column="32" selection-end-line="214" selection-end-column="32" />
           <folding>
             <element signature="e#601#611#0" expanded="true" />
           </folding>

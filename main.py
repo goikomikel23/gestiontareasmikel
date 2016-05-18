@@ -18,7 +18,7 @@ import cgi
 import re
 import webapp2
 from webapp2_extras import sessions
-#from webapp2_extras import session_module
+import session_module
 from google.appengine.ext import ndb
 
 
@@ -27,13 +27,13 @@ formLogin = '''
 <html>
 <body>
     <form action='/login' method="post">
-        <h1 align="center">Welcome</h1>
+        <p align="center"><img src='images/welcome.gif'></p>
         <p align="center">
-            Email*: <input type="text" name="email" value="josean@ehu.es" required/>
-        <br/>
-        Password*: <input type="password" name="password" value="josean" required/>
-        <br/>
-        <input type="submit" value="Enviar"/>
+            <h4 align='center'>Email</h4>
+            <p align='center'><input type="text" name="email" required/></p>
+        <h4 align='center'>Password</h4>
+        <p align='center'><input type="password" name="password" required/></p>
+        <p align='center'><input type="submit" value="Enter"/></p>
         </p>
     </form>
 </body>
@@ -56,7 +56,7 @@ signup_form = '''
         <br/>
             Repeat Password*:
                 <input type="password" name="verify" placeholder="Verify" required/>
-                <!--<div class="error">%(verify_error)s</div>-->
+
         <br/>
             Name*:
                 <input type="text" name="name" placeholder="Name" required/>
@@ -79,9 +79,11 @@ signup_form = '''
                 <input type="text" name="answer" placeholder="Your Answer"/>
                 <!--<div class="error">%(answer_error)s</div>-->
         <br/>
-                <input type="submit" value="Registrar"/>
+                <input type="submit" value="Register"/>
+
         </p>
     </form>
+    <p align='center'><img src='images/registration.gif' height="300" width="300"></p>
 </body>
 </html>
 '''
@@ -91,6 +93,7 @@ formAdmin = """
 <body>
     <form>
         <h1 align="center">Admin Zone</h1>
+        <h4 align="center">%(admin_session)s</h4>
         <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
             <th style="border:1px solid yellowgreen;">Dashboard</th>
             <tr>
@@ -113,6 +116,7 @@ formProfessor = """
 <body>
     <form>
         <h1 align="center">Professor Zone</h1>
+        <h4 align="center">%(professor_session)s</h4>
         <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
             <th style="border:1px solid yellowgreen;">Dashboard</th>
             <tr>
@@ -126,6 +130,15 @@ formProfessor = """
             </tr>
         </table>
     </form>
+</body>
+</html>
+"""
+
+formStudent = """
+<html>
+<body>
+        <h1 align="center">Student Zone</h1>
+        <h4 align="center">%(student_session)s</h4>
 </body>
 </html>
 """
@@ -199,7 +212,7 @@ formRol2 = """
 formDelete = """
 <html>
 <body>
-    <form action='/deleteUser' method='POST'>
+    <form action='/construction'>
         <h1 align="center">Delete Zone</h1>
         <h4 align="center">Delete the users you want</h4>
         <table style="border:1px solid yellowgreen;border-collapse:collapse;" align="center">
@@ -256,6 +269,7 @@ formSubject = """
         <input type="submit" value="Create"/>
         </p>
     </form>
+    <p align='center'><img src='images/subject.gif' height="300" width="300"></p>
 </body>
 </html>
 """
@@ -306,7 +320,9 @@ formTasks = """
             <tr class="access">
                 %(tasks)s
             </tr>
+
         </table>
+        <p align='center'><img src='images/student.gif' height="200" width="500"></p>
 </body>
 </html>
 """
@@ -336,19 +352,44 @@ formAddTask = """
 </html>
 """
 
+formRestricted = """
+<html>
+<body>
+    <h1 align='center'>Restricted Area</h1>
+    <h4 align='center'>You are not allowed to enter here</h4>
+    <p align='center'>
+    <img src='images/restricted.gif'>
+    <br/>
+    <a href='/'>Return</a>
+    </p>
+</body>
+</html>
+"""
 
-class MainHandler(webapp2.RequestHandler):
+formConstruction = """
+<!doctype html><html><body><h3 align='center'>This page is under construction</h3><p align='center'><img src='images/construction.jpg' style='width:304px;height:228px;'></p><p align='center'>
+<a href='/'>Return</a></p></body></html>"
+"""
+
+
+class MainHandler(session_module.BaseSessionHandler):
     def get(self):
         self.response.write(formLogin)
-        self.response.out.write("<p align='Center'><a href='/register'>Register</a></p>")
+        self.response.out.write("<br/><p align='Center'><a href='/register'><img src='images/register.gif'></a></p>")
+        self.session['Rol'] = ""
 
 
 
-class RegisterForm(webapp2.RequestHandler):
+class RegisterForm(session_module.BaseSessionHandler):
     def get(self):
         self.response.write(signup_form)
 
-class Login(webapp2.RequestHandler):
+class Logout(session_module.BaseSessionHandler):
+    def get(self):
+        for k in self.session.keys(): del self.session[k]
+        self.redirect("/")
+
+class Login(session_module.BaseSessionHandler):
 
     def post(self):
 
@@ -370,25 +411,15 @@ class Login(webapp2.RequestHandler):
                 if(authen==1):
 
                     if(user.rol=='Unknown'):
-                        self.response.write("<!doctype html><html><body><h3 align='center'>You have to wait till the administrator gives you access</h3><p align='center'><a href='/'>Return</a></body></html>")
+                        self.response.write("<html><body><h3 align='center'>You have to wait till the administrator gives you access</h3><p align='center'><a href='/'>Return</a></body></html>")
                     elif(user.rol=='Student'):
 
-                        """if self.session.get('counter'):
-                            self.response.out.write('<b>La sesion existe</b><p>')
-                            counter = self.session.get('counter')
-                            self.session['counter'] = counter + 1
-                            self.response.out.write('<h2>Numero de accesos = ' + str(self.session.get('counter')) + '</h2>')
-                        else:
-                            self.response.out.write('<b>Sesion Creada</b><p>')
-                            self.session['counter'] = 1
-                            self.response.out.write('<h2>Numero de accesos = ' + str(self.session.get('counter')) + '</h2>')
-
-
-                        self.session['Rol'] = "Student"
+                        self.session['Rol'] = "student"
                         self.session['Email'] = email
+                        self.session['Name'] = user.name
 
                         self.response.write(formLogin)
-                        self.response.out.write("<p align='Center'>"+self.session['Rol']+"</p>")"""
+                        self.response.out.write("<p align='Center'>"+self.session['Rol']+"</p>")
 
                         self.redirect('/student')
 
@@ -396,16 +427,16 @@ class Login(webapp2.RequestHandler):
 
                     elif(user.rol=='Professor'):
 
-
-
-                        #self.session['Rol'] = "Professor"
-                        #self.session['Email'] = email
+                        self.session['Rol'] = "professor"
+                        self.session['Email'] = email
+                        self.session['Name'] = user.name
 
                         self.redirect('/professor')
 
                     else:
-                        #self.session['Rol'] = "Admin"
-                        #self.session['Email'] = email
+                        self.session['Rol'] = "admin"
+                        self.session['Email'] = email
+                        self.session['Name'] = user.name
 
                         self.redirect('/admin')
                 else:
@@ -415,10 +446,14 @@ class Login(webapp2.RequestHandler):
             self.response.write(formLogin)
             self.response.out.write("<p align='Center'>YOUR EMAIL DOESN'T RULES, TRY IT AGAIN</p>")
 
-class Admin(webapp2.RequestHandler):
-    def write_form(self, access_admin="", rol_admin="", delete_admin=""):
+class Admin(session_module.BaseSessionHandler):
+    def write_form(self, admin_session="", access_admin="", rol_admin="", delete_admin=""):
+
+        session = self.session['Email']
+
         self.response.out.write(formAdmin %
-                                {"access_admin": "<a href='/access'>Access</a>",
+                                {"admin_session": session+" <a href='/logout'>Logout</a>",
+                                 "access_admin": "<a href='/access'>Access</a>",
                                  "rol_admin": "<a href='/rol'>Change Rol</a>",
                                  "delete_admin": "<a href='/delete'>Delete User</a>"})
 
@@ -438,49 +473,62 @@ class Admin(webapp2.RequestHandler):
 
             self.response.out.write(formUsers % {"user_access": sentence2})
 
-    def get(self): self.write_form()
+    def get(self):
+        rol = str(self.session['Rol'])
 
-class Professor(webapp2.RequestHandler):
-    def write_form(self, subject_professor="", rol_admin="", delete_admin=""):
-
-        session = 'josean@ehu.es'
-
-        self.response.out.write(formProfessor %
-                                {"subject_professor": "<a href='/subject'>Add new subject</a>",
-                                 "rol_admin": "<a href='/Tasks'>Tasks</a>",
-                                 "delete_admin": "<a href='/delete'>Delete User</a>"})
-
-        subs = ndb.gql("SELECT * FROM Subject where professor='"+session+"'")
-        count = ndb.gql("SELECT * FROM Subject where professor='"+session+"'").count()
-
-        sentence2 = ""
-
-        if (count == 0):
-            self.response.out.write(
-                formSubjects % {"professor_subjects": "<p align='center'>You have not any subject assigned</p>"})
+        if rol != "admin":
+            self.response.write(formRestricted)
         else:
-            for sub in subs:
-                sentence = "<tr><td>" + sub.code + "</td><td>" + sub.name + "</td><td>" + sub.description + "</td></tr>"
-                sentence2 = sentence2 + sentence
+         self.write_form()
+
+class Professor(session_module.BaseSessionHandler):
+    def write_form(self, professor_sesion="", subject_professor="", rol_admin="", delete_admin=""):
 
 
-            self.response.out.write(formSubjects % {"professor_subjects": sentence2})
+        rol = str(self.session['Rol'])
+
+        if rol != "professor":
+            self.response.write(formRestricted)
+
+        else:
+            session = self.session['Email']
+
+            self.response.out.write(formProfessor %
+                                    {"professor_session": session+" <a href='/logout'>Logout</a>",
+                                    "subject_professor": "<a href='/subject'>New subject</a>",
+                                    "rol_admin": "<a href='/Tasks'>Tasks</a>",
+                                    "delete_admin": "<a href='/delete'>Delete User</a>"})
+
+            subs = ndb.gql("SELECT * FROM Subject where professor='"+session+"'")
+            count = ndb.gql("SELECT * FROM Subject where professor='"+session+"'").count()
+
+            sentence2 = ""
+
+            if (count == 0):
+                self.response.out.write(
+                    formSubjects % {"professor_subjects": "<p align='center'>You have not any subject assigned</p>"})
+            else:
+                for sub in subs:
+                    sentence = "<tr><td>" + sub.code + "</td><td>" + sub.name + "</td><td>" + sub.description + "</td></tr>"
+                    sentence2 = sentence2 + sentence
+
+
+                self.response.out.write(formSubjects % {"professor_subjects": sentence2})
 
     def get(self): self.write_form()
 
 
-class DeleteTask(webapp2.RequestHandler):
+class DeleteTask(session_module.BaseSessionHandler):
 
     def get(self):
-        self.response.write(
-            "<!doctype html><html><body><h3 align='center'>This page is under construction</h3><p align='center'><img src='images/construction.jpg' style='width:304px;height:228px;'></p><p align='center'><a href='/tasks'>Return</a></p></body></html>")
+        self.response.write(formConstruction)
 
 
-class NewTask(webapp2.RequestHandler):
+class NewTask(session_module.BaseSessionHandler):
 
     def post(self):
 
-        session = 'josean@ehu.es'
+        session = self.session['Email']
 
         task_code = self.request.get('code')
         task_description = self.request.get('description')
@@ -498,7 +546,7 @@ class NewTask(webapp2.RequestHandler):
             s.put()
 
             self.response.write(
-                '<!doctype html><html><body><p align="Center">The task has been added successfully</p></body></html>')
+                '<!doctype html><html><body><p align="Center">The task has been added successfully<br/><br/><a href="/Tasks">Return</a><p align="center"><img src="images/success.gif" height="300" width="300"></p></p></body></html>')
 
         else:
             self.response.write('<!doctype html><html><body><pre>The task ')
@@ -506,9 +554,9 @@ class NewTask(webapp2.RequestHandler):
 
     def write_form(self, subject_choose=""):
 
-        session = 'josean@ehu.es'
+        session = self.session['Email']
 
-        subs = ndb.gql("select * from Subject where professor='josean@ehu.es'")
+        subs = ndb.gql("select * from Subject where professor='"+session+"'")
 
         sentence = "<select name='subject'>"
 
@@ -529,25 +577,29 @@ class NewTask(webapp2.RequestHandler):
 
         if (count == 0):
             self.response.out.write(
-                formTasks % {"tasks": "<p align='center'>There're not users in your database</p>"})
+                formTasks % {"tasks": "<p align='center'>You have not entered any task yet</p>"})
         else:
             for task in tasks:
                 sentence = "<tr><td>" + task.subjectCode + "</td><td>" + task.taskCode + "</td><td>" + task.description + "</td></tr>"
                 sentence2 = sentence2 + sentence
 
-            self.response.out.write(formTasks % {"tasks": sentence2})
+            self.response.out.write(formTasks % {"tasks": sentence2+"</table><br/><p align='center'><a href='/professor'>Return</a></p>"})
 
     def get(self):
-        self.write_form()
+        rol = str(self.session['Rol'])
+
+        if rol != "professor":
+            self.response.write(formRestricted)
+        else:
+            self.write_form()
 
 
-class Tasks(webapp2.RequestHandler):
+class Tasks(session_module.BaseSessionHandler):
 
     def write_form(self, tasks_add="",tasks_delete=""):
 
-        print (    "<img src='construction.jpg'>")
 
-        session = 'josean@ehu.es'
+        session = self.session['Email']
 
         self.response.out.write(formTasksDash %
                                 {"tasks_add": "<a href='/newTask'>New task</a>",
@@ -562,7 +614,7 @@ class Tasks(webapp2.RequestHandler):
 
         if (count == 0):
             self.response.out.write(
-                formTasks % {"tasks": "<p align='center'>There're not users in your database</p>"})
+                formTasks % {"tasks": "<p align='center'>You have not entered any task yet</p>"})
         else:
             for task in tasks:
                 sentence = "<tr><td>" + task.subjectCode + "</td><td>" + task.taskCode + "</td><td>" + task.description + "</td></tr>"
@@ -571,18 +623,29 @@ class Tasks(webapp2.RequestHandler):
             self.response.out.write(formTasks % {"tasks": sentence2})
 
     def get(self):
-        self.write_form()
+        rol = str(self.session['Rol'])
 
-class SubjectClass(webapp2.RequestHandler):
+        if rol != "professor":
+            self.response.write(formRestricted)
+        else:
+            self.write_form()
+
+class SubjectClass(session_module.BaseSessionHandler):
 
     def get(self):
-        self.response.write(formSubject)
 
-class NewSubject(webapp2.RequestHandler):
+        rol = str(self.session['Rol'])
+
+        if rol != "professor":
+            self.response.write(formRestricted)
+        else:
+            self.response.write(formSubject)
+
+class NewSubject(session_module.BaseSessionHandler):
 
     def post(self):
 
-        session = "josean@ehu.es"
+        session = self.session['Email']
 
         subject_name = self.request.get('name')
         subject_code = self.request.get('code')
@@ -599,40 +662,49 @@ class NewSubject(webapp2.RequestHandler):
 
             s.put()
 
-            self.response.write('<!doctype html><html><body><p align="Center">The subject has been added successfully</p></body></html>')
+            self.response.write('<!doctype html><html><body><p align="Center">Ouch!!! The subject has been added successfully<br/><br/><a href="/professor">Return</a></p><p align="center"><img src="images/success.gif" height="300" width="300"></p></body></html>')
 
         else:
-            self.response.write('<!doctype html><html><body><pre>The email ')
-            self.response.write(cgi.escape(self.request.get('email')))
-            self.response.write(' is already registered</pre></body></html>')
+            self.response.write('<!doctype html><html><body><pre><h3 align="center">The subject ')
+            self.response.write(' is already registered</3><p align="center"><img src="images/fail.gif" height="300" width="300"><br/><a href="/subject">Return</a></p></pre></body></html>')
 
-class Student(webapp2.RequestHandler):
-    def write_form(self, access_admin="", rol_admin="", delete_admin=""):
-        self.response.out.write(formAdmin %
-                                {"access_admin": "<a href='/access'>Access</a>",
-                                 "rol_admin": "<a href='/rol'>Change Rol</a>",
-                                 "delete_admin": "<a href='/delete'>Delete User</a>"})
 
-        users = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'")
-        count = ndb.gql("SELECT * FROM User where email!='admin@ehu.es'").count()
+
+
+
+
+class Student(session_module.BaseSessionHandler):
+    def write_form(self, student_session=""):
+
+        self.response.out.write(formStudent %
+                                {"student_session": str(self.session['Email'])+" <a href='/logout'>Logout</a>"
+                                     })
+
+        tasks = ndb.gql("SELECT * FROM Task")
+        count = ndb.gql("SELECT * FROM Task").count()
 
         sentence2 = ""
 
         if (count == 0):
             self.response.out.write(
-                formUsers % {"user_access": "<p align='center'>There're not users in your database</p>"})
+                formTasks % {"tasks": "<p align='center'>You have not tasks to do</p>"})
         else:
-            for user in users:
-                sentence = "<tr><td>" + user.name + "</td><td>" + user.lastName + "</td><td>" + user.email + "</td><td>" + user.rol + "</td></tr>"
+            for task in tasks:
+                sentence = "<tr><td>" + task.subjectCode + "</td><td>" + task.taskCode + "</td><td>" + task.description + "</td></tr>"
                 sentence2 = sentence2 + sentence
 
+            self.response.out.write(formTasks % {"tasks": sentence2})
 
-            self.response.out.write(formUsers % {"user_access": sentence2})
+    def get(self):
+        rol = str(self.session['Rol'])
 
-    def get(self): self.write_form()
+        if rol != "student":
+            self.response.write(formRestricted)
+        else:
+            self.write_form()
 
 
-class Access(webapp2.RequestHandler):
+class Access(session_module.BaseSessionHandler):
 
     def write_form(self, user_access=""):
 
@@ -642,7 +714,7 @@ class Access(webapp2.RequestHandler):
         sentence2 = ""
 
         if(count==0):
-            self.response.out.write(formAccess2 % {"user_access": "<p align='center'>There're not users requesting access</p>"})
+            self.response.out.write(formAccess2 % {"user_access": "<p align='center'>There're not users requesting access<br/><br/><a href='/admin'>Return</a></p>"})
         else:
             for user in users:
                 sentence = "<tr><td>"+user.name+"</td><td>"+user.lastName+"</td><td>"+user.email+"</td>"
@@ -655,9 +727,14 @@ class Access(webapp2.RequestHandler):
             self.response.out.write(formAccess % {"user_access": sentence2})
 
     def get(self):
-        self.write_form()
+        rol = str(self.session['Rol'])
 
-class ChangeRol(webapp2.RequestHandler):
+        if rol != "admin":
+            self.response.write(formRestricted)
+        else:
+            self.write_form()
+
+class ChangeRol(session_module.BaseSessionHandler):
 
     def post(self):
         users = ndb.gql("SELECT * FROM User WHERE rol = 'Unknown'")
@@ -667,10 +744,10 @@ class ChangeRol(webapp2.RequestHandler):
             user.rol = rol
             user.put()
 
-        self.response.out.write(formAccess2 % {"user_access": "THE ROLS HAVE BEEN CHANGED"})
+        self.response.out.write(formAccess2 % {"user_access": "THE ROLS HAVE BEEN CHANGED<br/><br/><a href='/admin'>Return</a>"})
 
 
-class ChangeRol2(webapp2.RequestHandler):
+class ChangeRol2(session_module.BaseSessionHandler):
 
     def write_form(self, user_access=""):
 
@@ -693,10 +770,15 @@ class ChangeRol2(webapp2.RequestHandler):
             self.response.out.write(formRol % {"user_access": sentence2})
 
     def get(self):
-        self.write_form()
+        rol = str(self.session['Rol'])
+
+        if rol != "admin":
+            self.response.write(formRestricted)
+        else:
+            self.write_form()
 
 
-class ChangeRol3(webapp2.RequestHandler):
+class ChangeRol3(session_module.BaseSessionHandler):
 
     def post(self):
         users = ndb.gql("SELECT * FROM User WHERE email!='admin@ehu.es'")
@@ -708,10 +790,10 @@ class ChangeRol3(webapp2.RequestHandler):
                 user.rol = rol
                 user.put()
 
-        self.response.out.write(formRol2 % {"user_access": "THE ROLS HAVE BEEN CHANGED"})
+        self.response.out.write(formRol2 % {"user_access": "THE ROLS HAVE BEEN CHANGED<br/><br/><a href='/admin'>Return</a>"})
 
 
-class DeleteUser(webapp2.RequestHandler):
+class DeleteUser(session_module.BaseSessionHandler):
 
     def write_form(self, user_access=""):
 
@@ -734,9 +816,14 @@ class DeleteUser(webapp2.RequestHandler):
             self.response.out.write(formDelete % {"user_access": sentence2})
 
     def get(self):
-        self.write_form()
+        rol = str(self.session['Rol'])
 
-class DeleteUser2(webapp2.RequestHandler):
+        if rol != "admin":
+            self.response.write(formRestricted)
+        else:
+            self.write_form()
+
+class DeleteUser2(session_module.BaseSessionHandler):
 
     def post(self):
         users = ndb.gql("SELECT * FROM User WHERE email!='admin@ehu.es'")
@@ -753,13 +840,7 @@ class DeleteUser2(webapp2.RequestHandler):
 
 
 
-class RegisterData(webapp2.RequestHandler):
-    def write_form(self, email="", email_error="", password="", password_error="", verify="", verify_error="", name="",
-                   name_error="", lastName="", lastName_error="", dni="", dni_error="", question="", question_error="",
-                   answer="", answer_error=""):
-
-        def get(self):
-            self.write_form()
+class RegisterData(session_module.BaseSessionHandler):
 
 
     def post(self):
@@ -772,29 +853,39 @@ class RegisterData(webapp2.RequestHandler):
         user_question = self.request.get('question')
         user_answer = self.request.get('answer')
 
-        user = User.query(User.name == user_name, User.email == user_email).count()
 
-        if user == 0:
-            u = User()
-            u.email = user_email
-            u.password = user_password
-            u.verify = user_verify
-            u.name = user_name
-            u.lastName = user_lastName
-            u.dni = user_dni
-            u.question = user_question
-            u.answer = user_answer
-            u.rol = "Unknown"
-            u.put()
 
-            self.response.write('<!doctype html><html><body>You have to wait till the administrator gives you access</body></html>')
+        user = ndb.gql("select * from User where email='"+user_email+"'").count()
 
+        if user_password == user_verify:
+
+            if user == 0:
+                u = User()
+                u.email = user_email
+                u.password = user_password
+                u.verify = user_verify
+                u.name = user_name
+                u.lastName = user_lastName
+                u.dni = user_dni
+                u.question = user_question
+                u.answer = user_answer
+                u.rol = "Unknown"
+                u.put()
+
+                self.response.write("<html><body><h3 align='center'>You have to wait till the administrator gives you access</h3><p align='center'><a href='/'>Return</a></body></html>")
+
+            else:
+                self.response.write('<!doctype html><html><body><pre><p align="center">The email ')
+                self.response.write(cgi.escape(self.request.get('email')))
+                self.response.write(' is already registered</p></pre><p align="center"><img src="images/fail.gif" height="300" width="300"></p><br/><p align="center"><a href="/register">Return</a></p></body></html>')
         else:
-            self.response.write('<!doctype html><html><body><pre>The email ')
-            self.response.write(cgi.escape(self.request.get('email')))
-            self.response.write(' is already registered</pre></body></html>')
 
+            self.response.write(signup_form)
+            self.response.out.write("<p align='Center'>PASSWORD VERIFICATION WRONG</p>")
 
+class Construction(session_module.BaseSessionHandler):
+    def post(self):
+        self.response.write(formConstruction)
 
 
 def escape_html(s):
@@ -859,5 +950,7 @@ app = webapp2.WSGIApplication([
     ('/newSubject', NewSubject),
     ('/Tasks', Tasks),
     ('/newTask', NewTask),
-    ('/deleteTask', DeleteTask)
-], debug=True)
+    ('/deleteTask', DeleteTask),
+    ('/logout', Logout),
+    ('/construction', Construction)
+], config= session_module.myconfig_dict ,debug=True)
